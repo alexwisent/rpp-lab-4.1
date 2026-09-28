@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 
 # 1. Загружаем переменные из .env в окружение процесса
@@ -43,9 +43,35 @@ class Visit(db.Model):
     )
     ip_address = db.Column(db.String(45), nullable=False)
 
+
+# Создание таблиц при старте приложени
+with app.app_context():
+    db.create_all()
+
 @app.get("/")
 def index():
     return "OK", 200
+
+
+@app.get("/hello")
+def hello():
+    # 1. Текущее время (UTC с явным часовым поясом)
+    visited_at = datetime.now(timezone.utc)
+
+    # 2. IP-адрес клиента (учитываем X-Forwarded-For, если есть прокси)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+    else:
+        ip_address = request.remote_addr or "unknown"
+
+    # 3. Сохраняем запись в БД
+    visit = Visit(visited_at=visited_at, ip_address=ip_address)
+    db.session.add(visit)
+    db.session.commit()
+
+    # 4. Возвращаем 200 OK с телом "Hello"
+    return "Hello", 200
 
 
 if __name__ == "__main__":
