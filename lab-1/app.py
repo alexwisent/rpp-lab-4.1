@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
@@ -29,6 +30,18 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # 5. Инициализируем SQLAlchemy
 db = SQLAlchemy(app)
 
+
+# Модель Visit
+class Visit(db.Model):
+    __tablename__ = "visits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    visited_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    ip_address = db.Column(db.String(45), nullable=False)
 
 @app.get("/")
 def index():
